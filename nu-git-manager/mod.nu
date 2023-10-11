@@ -35,7 +35,7 @@ export def "gm" []: nothing -> nothing {
 #     > gm clone https://github.com/amtoine/nu-git-manager --fetch https --push ssh
 export def "gm clone" [
     url: string # the URL to the repository to clone, supports HTTPS and SSH links, as well as references ending in `.git` or starting with `git@`
-    --remote: string = "origin" # the name of the remote to setup
+    --remote: string # the name of the remote to setup
     --ssh # setup the remote to use the SSH protocol both to FETCH and to PUSH
     --fetch: string@"nu-complete git-protocols" # setup the FETCH protocol explicitely, will overwrite `--ssh` for FETCH
     --push: string@"nu-complete git-protocols" # setup the PUSH protocol explicitely, will overwrite `--ssh` for PUSH
@@ -63,9 +63,13 @@ export def "gm clone" [
     let urls = get-fetch-push-urls $repository $fetch $push $ssh
 
     if $bare {
-        git clone $urls.fetch $local_path --origin $remote --bare
+        if $remote != null {
+            log warning $"--bare and --remote cannot be used at the same time, discarding --remote"
+        }
+
+        git clone $urls.fetch $local_path --bare
     } else {
-        git clone $urls.fetch $local_path --origin $remote
+        git clone $urls.fetch $local_path --origin ($remote | default "origin")
     }
 
     git -C $local_path remote set-url $remote $urls.fetch
